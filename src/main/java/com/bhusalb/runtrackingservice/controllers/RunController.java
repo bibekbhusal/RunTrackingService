@@ -31,6 +31,8 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import java.util.Optional;
 
 @Tag (name = "Run")
 @RestController
@@ -45,12 +47,12 @@ public class RunController {
 
     @PreAuthorize ("hasRole('ADMIN') || (@objectIdMapperImpl.stringToObjectId(#request.ownerId) == principal.id)")
     @PostMapping
-    public RunView create (@RequestBody @Valid CreateRunRequest request) {
+    public RunView create (@RequestBody @NotNull @Valid CreateRunRequest request) {
         return runService.create(request);
     }
 
     @PutMapping ("{runId}")
-    public RunView update (@PathVariable @NotBlank String runId, @RequestBody @Valid UpdateRunRequest request,
+    public RunView update (@PathVariable @NotBlank String runId, @RequestBody @NotNull @Valid UpdateRunRequest request,
                            final Authentication authentication) {
         final User user = (User) authentication.getPrincipal();
         final ObjectId runObjectId = objectIdMapper.stringToObjectId(runId);
@@ -89,9 +91,24 @@ public class RunController {
         throw new HttpClientErrorException(HttpStatus.FORBIDDEN, "Not authorized to GET the given run.");
     }
 
-    @PreAuthorize ("hasRole('ADMIN') || (#request.ownerId == principal.username)")
-    @PostMapping ("/v1/runs/search")
-    public ListResponse<RunView> search (@RequestBody SearchRequest<SearchRunQuery> request) {
-        return null;
+    @PostMapping ("search")
+    public ListResponse<RunView> search (@RequestBody @NotNull @Valid SearchRequest<SearchRunQuery> request,
+                                         final Authentication authentication) {
+
+        final User user = (User) authentication.getPrincipal();
+        // If logged in user is not an Admin, then restrict the query for the logged in user.
+        if (!user.getRoles().contains(Roles.ADMIN)) {
+            final Optional<ObjectId> providedId = Optional.ofNullable(request.getQuery().getOwnerId())
+                .map(objectIdMapper::stringToObjectId);
+
+            if (!providedId.isPresent()) {
+                request.getQuery().setOwnerId(user.getId().toString());
+            } else if (!providedId.get().equals(user.getId())) {
+                final String message = String.format("Can only search your runs. Provided ownerId %s.",
+                    providedId.toString());
+                throw new HttpClientErrorException(HttpStatus.FORBIDDEN, message);
+            }
+        }
+        return new ListResponse<>(runService.searchRuns(request.getPage(), request.getQuery()));
     }
 }

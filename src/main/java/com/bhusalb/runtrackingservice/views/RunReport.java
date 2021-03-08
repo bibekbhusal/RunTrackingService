@@ -7,6 +7,10 @@ import java.time.LocalDateTime;
 
 @Data
 public class RunReport {
+
+    @NotNull
+    private Integer totalRunsInPeriod;
+
     @NotNull
     private LocalDateTime earliestRunDate;
 

@@ -45,6 +45,7 @@ public class User implements UserDetails, Serializable {
     @NotEmpty
     private Set<Role> roles;
 
+    @Indexed
     @CreatedDate
     private LocalDateTime created;
 

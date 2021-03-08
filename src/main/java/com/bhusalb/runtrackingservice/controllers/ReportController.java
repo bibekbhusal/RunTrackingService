@@ -88,6 +88,7 @@ public class ReportController {
         final Double averagePace = totalSpeed / runs.size();
 
         final RunReport report = new RunReport();
+        report.setTotalRunsInPeriod(runs.size());
         report.setEarliestRunDate(earliest);
         report.setLatestRunDate(latest);
         report.setAverageDuration(averageDuration);

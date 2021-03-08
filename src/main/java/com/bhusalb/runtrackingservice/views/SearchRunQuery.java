@@ -3,24 +3,22 @@ package com.bhusalb.runtrackingservice.views;
 import com.bhusalb.runtrackingservice.Constants;
 import lombok.Data;
 
-import javax.validation.constraints.Email;
 import javax.validation.constraints.Max;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
-import java.time.LocalDateTime;
+import javax.validation.constraints.Min;
+import java.time.LocalDate;
 
 @Data
 public class SearchRunQuery implements SearchQuery {
 
-    @NotBlank
-    @Email
-    @Size (max = Constants.MAX_EMAIL_SIZE)
     private String ownerId;
 
-    private LocalDateTime dateStart;
-    private LocalDateTime dateEnd;
+    private LocalDate dateStart;
+    private LocalDate dateEnd;
 
+    @Min(value = 1)
     private Integer minDuration;
+
+    @Min(value = 1)
     private Integer maxDuration;
 
     private Double minDistance;
@@ -28,6 +26,7 @@ public class SearchRunQuery implements SearchQuery {
 
     private Coordinates queryPoint;
 
+    @Min(value = 1)
     @Max (value = Constants.MAX_RADIUS_TO_QUERY)
     private Integer withinDistance;
 }

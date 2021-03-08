@@ -16,6 +16,7 @@ import org.bson.types.ObjectId;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,6 +34,7 @@ import javax.validation.Valid;
 @RequestMapping (path = "/v1/users/")
 @RequiredArgsConstructor
 @Slf4j
+@Validated
 public class UserAdminController {
 
     private final UserService userService;
@@ -94,7 +96,7 @@ public class UserAdminController {
 
     @PreAuthorize ("hasRole('USER_MANAGER') || hasRole('ADMIN')")
     @PostMapping ("search")
-    public ListResponse<UserView> search (@RequestBody SearchRequest<SearchUserQuery> request) {
+    public ListResponse<UserView> search (@RequestBody @Valid SearchRequest<SearchUserQuery> request) {
         return new ListResponse<>(userService.searchUsers(request.getPage(), request.getQuery()));
     }
 

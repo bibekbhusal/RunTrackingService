@@ -55,18 +55,18 @@ public class RunService {
     @Transactional
     public RunView update (final ObjectId objectId, final UpdateRunRequest updateRunRequest) {
         final Run run = runRepository.getById(objectId);
-
-        final LocalDate currentDate = run.getStartDate().toLocalDate();
-        final Coordinates currentCoordinates = Coordinates.fromGeoJSONPoint(run.getLocation());
+        final boolean updateWeather = updateWeather(run, updateRunRequest);
 
         runEditMapper.update(updateRunRequest, run);
+        if (updateWeather) {
+            // Since the weather should be updated, removing old weather. New weather will be added asynchronously.
+            run.setWeather(null);
+        }
         final Run updated = runRepository.save(run);
 
-        if (updateWeather(currentDate, currentCoordinates, updateRunRequest)) {
-            final LocalDate searchDate = Optional.ofNullable(updateRunRequest.getStartDate())
-                .map(LocalDateTime::toLocalDate).orElse(currentDate);
-            final Coordinates searchCoordinates = Optional.ofNullable(updateRunRequest.getCoordinates())
-                .orElse(currentCoordinates);
+        if (updateWeather) {
+            final LocalDate searchDate = run.getStartDate().toLocalDate();
+            final Coordinates searchCoordinates = Coordinates.fromGeoJSONPoint(run.getLocation());
             weatherService.getWeather(searchDate, searchCoordinates)
                 .subscribe(response -> {
                     log.info("Updating weather of a run. Response: {}", response);
@@ -116,9 +116,10 @@ public class RunService {
         return weather;
     }
 
-    private boolean updateWeather (final LocalDate currentDate,
-                                   final Coordinates currentCoordinates,
-                                   final UpdateRunRequest request) {
+    private boolean updateWeather (final Run run, final UpdateRunRequest request) {
+
+        final LocalDate currentDate = run.getStartDate().toLocalDate();
+        final Coordinates currentCoordinates = Coordinates.fromGeoJSONPoint(run.getLocation());
 
         log.info("Current date: {} and updated date: {}", currentDate,
             Optional.ofNullable(request.getStartDate()).map(LocalDateTime::toLocalDate).orElse(null));

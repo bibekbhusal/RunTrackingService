@@ -1,8 +1,9 @@
 package com.bhusalb.runtrackingservice.repos;
 
-import com.bhusalb.runtrackingservice.exceptions.ResourceNotFoundException;
-import com.bhusalb.runtrackingservice.models.Run;
 import com.bhusalb.runtrackingservice.Constants;
+import com.bhusalb.runtrackingservice.exceptions.ResourceNotFoundException;
+import com.bhusalb.runtrackingservice.mappers.ObjectIdMapper;
+import com.bhusalb.runtrackingservice.models.Run;
 import com.bhusalb.runtrackingservice.views.Coordinates;
 import com.bhusalb.runtrackingservice.views.Page;
 import com.bhusalb.runtrackingservice.views.SearchRunQuery;
@@ -11,15 +12,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.geo.Distance;
+import org.springframework.data.geo.Metrics;
 import org.springframework.data.geo.Point;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.GeoNearOperation;
 import org.springframework.data.mongodb.core.aggregation.TypedAggregation;
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.NearQuery;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
@@ -27,7 +33,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
+import static org.springframework.data.mongodb.core.aggregation.Aggregation.geoNear;
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.limit;
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.match;
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation;
@@ -63,19 +71,22 @@ class CustomRunRepoImpl implements CustomRunRepo {
 
     private final MongoTemplate mongoTemplate;
 
+    @Autowired
+    private ObjectIdMapper objectIdMapper;
+
     @Override
     public List<Run> searchRuns (final Page page, final SearchRunQuery query) {
         final List<AggregationOperation> operations = new ArrayList<>();
         final List<Criteria> criteria = new ArrayList<>();
 
         if (!StringUtils.isBlank(query.getOwnerId())) {
-            criteria.add(Criteria.where("ownerId").is(query.getOwnerId()));
+            criteria.add(Criteria.where("ownerId").is(objectIdMapper.stringToObjectId(query.getOwnerId())));
         }
         if (query.getDateStart() != null) {
-            criteria.add(Criteria.where("date").gte(query.getDateStart()));
+            criteria.add(Criteria.where("startDate").gte(query.getDateStart().atStartOfDay()));
         }
         if (query.getDateEnd() != null) {
-            criteria.add(Criteria.where("date").lte(query.getDateEnd()));
+            criteria.add(Criteria.where("startDate").lt(query.getDateEnd().plusDays(1).atStartOfDay()));
         }
         if (query.getMinDuration() != null) {
             criteria.add(Criteria.where("duration").gte(query.getMinDuration()));
@@ -89,26 +100,36 @@ class CustomRunRepoImpl implements CustomRunRepo {
         if (query.getMaxDistance() != null) {
             criteria.add(Criteria.where("distance").lte(query.getMaxDistance()));
         }
-        if (query.getQueryPoint() != null) {
-            final Point point = Coordinates.toGeoJSONPoint(query.getQueryPoint());
-            final Criteria locationCriteria = Criteria.where("location").near(point);
-            if (query.getWithinDistance() != null) {
-                locationCriteria.maxDistance(query.getWithinDistance());
-            } else {
-                locationCriteria.maxDistance(Constants.DEFAULT_RADIUS_TO_QUERY);
-            }
-            criteria.add(locationCriteria);
-        }
 
         if (!criteria.isEmpty()) {
             final Criteria merged = new Criteria().andOperator(criteria.toArray(new Criteria[0]));
-            operations.add(match(merged));
-        } else {
+            criteria.clear();
+            criteria.add(merged);
+        }
+
+        if (query.getQueryPoint() != null) {
+            final Point point = Coordinates.toGeoJSONPoint(query.getQueryPoint());
+            final NearQuery nearQuery = NearQuery.near(point, Metrics.KILOMETERS);
+            final double distanceWithin = Optional.ofNullable(query.getWithinDistance())
+                .map(dist -> dist / 1000.0)
+                .orElse(Constants.DEFAULT_RADIUS_TO_QUERY / 1000.0);
+            nearQuery.maxDistance(distanceWithin);
+            if (!criteria.isEmpty()) {
+                nearQuery.query(Query.query(criteria.get(0)));
+            }
+            final GeoNearOperation geoNear = geoNear(nearQuery, "dist.calculated");
+            geoNear.useIndex("owner_location");
+            operations.add(geoNear);
+        } else if (!criteria.isEmpty()) {
+            operations.add(match(criteria.get(0)));
+        }
+
+        if (operations.isEmpty()) {
             log.warn("Criteria is empty. Skipping query and returning empty result.");
             return Collections.emptyList();
         }
 
-        operations.add(sort(Sort.Direction.DESC, "created"));
+        operations.add(sort(Sort.Direction.DESC, "startDate"));
         operations.add(skip((page.getNumber() - 1) * page.getLimit()));
         operations.add(limit(page.getLimit()));
 

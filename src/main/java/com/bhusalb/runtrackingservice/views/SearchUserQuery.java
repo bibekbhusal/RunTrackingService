@@ -2,16 +2,13 @@ package com.bhusalb.runtrackingservice.views;
 
 import lombok.Data;
 
-import javax.validation.constraints.Email;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Data
 public class SearchUserQuery implements SearchQuery {
-//    private String id;
     private String email;
     private String fullName;
-    private LocalDateTime createdDateStart;
-    private LocalDateTime createdDateEnd;
-    @Email
+    private LocalDate createdDateStart;
+    private LocalDate createdDateEnd;
     private String createdBy;
 }

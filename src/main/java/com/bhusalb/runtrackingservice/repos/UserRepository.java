@@ -1,6 +1,7 @@
 package com.bhusalb.runtrackingservice.repos;
 
 import com.bhusalb.runtrackingservice.exceptions.ResourceNotFoundException;
+import com.bhusalb.runtrackingservice.mappers.ObjectIdMapper;
 import com.bhusalb.runtrackingservice.models.User;
 import com.bhusalb.runtrackingservice.views.Page;
 import com.bhusalb.runtrackingservice.views.SearchUserQuery;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
@@ -57,13 +59,16 @@ class UserRepoCustomImpl implements UserRepoCustom {
 
     private final MongoTemplate mongoTemplate;
 
+    @Autowired
+    private ObjectIdMapper objectIdMapper;
+
     @Override
     public List<User> searchUsers (final Page page, final SearchUserQuery query) {
         final List<AggregationOperation> operations = new ArrayList<>();
         final List<Criteria> criteria = new ArrayList<>();
 
         if (!StringUtils.isBlank(query.getEmail())) {
-            criteria.add(Criteria.where("email").is(query.getEmail()));
+            criteria.add(Criteria.where("email").regex(query.getEmail(), "i"));
         }
 
         if (!StringUtils.isBlank(query.getFullName())) {
@@ -71,15 +76,15 @@ class UserRepoCustomImpl implements UserRepoCustom {
         }
 
         if (!StringUtils.isBlank(query.getCreatedBy())) {
-            criteria.add(Criteria.where("createdBy").regex(query.getCreatedBy(), "i"));
+            criteria.add(Criteria.where("createdBy").is(objectIdMapper.stringToObjectId(query.getCreatedBy())));
         }
 
         if (query.getCreatedDateStart() != null) {
-            criteria.add(Criteria.where("created").gte(query.getCreatedDateStart()));
+            criteria.add(Criteria.where("created").gte(query.getCreatedDateStart().atStartOfDay()));
         }
 
         if (query.getCreatedDateEnd() != null) {
-            criteria.add(Criteria.where("created").lte(query.getCreatedDateEnd()));
+            criteria.add(Criteria.where("created").lt(query.getCreatedDateEnd().plusDays(1).atStartOfDay()));
         }
 
         if (!criteria.isEmpty()) {
