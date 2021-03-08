@@ -88,6 +88,21 @@ public class RunService {
         return runViewMapper.toRunView(runRepository.getById(objectId));
     }
 
+    public List<RunView> findRuns (final ObjectId ownerId, final LocalDate startDate, final LocalDate endDate) {
+
+        if (!userService.doesUserExist(ownerId)) {
+            final String message = String.format("User with id %s does not exist.", ownerId.toString());
+            log.warn("Tried to find runs of a user {} which does not exist.", ownerId);
+            throw new ResourceNotFoundException(message);
+        }
+
+        final List<Run> runs = runRepository.findByOwnerIdAndStartDateBetween(ownerId,
+            startDate.atStartOfDay(),
+            endDate.plusDays(1).atStartOfDay());
+
+        return runViewMapper.toRunViews(runs);
+    }
+
     public List<RunView> searchRuns (final Page page, final SearchRunQuery query) {
         final List<Run> runs = runRepository.searchRuns(page, query);
         return runViewMapper.toRunViews(runs);

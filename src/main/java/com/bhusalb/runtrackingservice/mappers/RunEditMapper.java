@@ -34,6 +34,13 @@ public abstract class RunEditMapper {
             log.warn("Tried to create run from more than a year ago. Date: {}", createRunRequest.getStartDate());
             throw new ValidationException("Cannot create run from more than a year ago.");
         }
+
+        // Do not allow creating run from future dates.
+        // Adding 5 minutes to cover clock skew.
+        if (createRunRequest.getStartDate().isAfter(LocalDateTime.now().plusMinutes(5))) {
+            log.warn("Tried to create run from future date. Date: {}", createRunRequest.getStartDate());
+            throw new ValidationException("Start date cannot be in future.");
+        }
     }
 
     @AfterMapping
@@ -46,6 +53,14 @@ public abstract class RunEditMapper {
             updateRunRequest.getStartDate().isBefore(LocalDateTime.now().minusYears(YEAR_THRESHOLD))) {
             log.warn("Tried to update run to start more than a year ago. Date: {}", updateRunRequest.getStartDate());
             throw new ValidationException("Cannot update run to start more than a year ago.");
+        }
+
+        // Do not allow updating run start date to future dates.
+        // Adding 5 minutes to cover clock skew.
+        if (updateRunRequest.getStartDate() != null &&
+            updateRunRequest.getStartDate().isAfter(LocalDateTime.now().plusMinutes(5))) {
+            log.warn("Tried to update run to future date. Date: {}", updateRunRequest.getStartDate());
+            throw new ValidationException("Start date cannot be in future.");
         }
     }
 }

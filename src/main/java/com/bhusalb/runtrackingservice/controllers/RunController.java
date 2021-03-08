@@ -18,6 +18,7 @@ import org.bson.types.ObjectId;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,12 +30,14 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotBlank;
 
 @Tag (name = "Run")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping ("/v1/runs/")
 @Slf4j
+@Validated
 public class RunController {
 
     private final RunService runService;
@@ -47,7 +50,7 @@ public class RunController {
     }
 
     @PutMapping ("{runId}")
-    public RunView update (@PathVariable String runId, @RequestBody @Valid UpdateRunRequest request,
+    public RunView update (@PathVariable @NotBlank String runId, @RequestBody @Valid UpdateRunRequest request,
                            final Authentication authentication) {
         final User user = (User) authentication.getPrincipal();
         final ObjectId runObjectId = objectIdMapper.stringToObjectId(runId);
@@ -61,7 +64,7 @@ public class RunController {
     }
 
     @DeleteMapping ("{runId}")
-    public RunView delete (@PathVariable String runId, final Authentication authentication) {
+    public RunView delete (@PathVariable @NotBlank String runId, final Authentication authentication) {
         final ObjectId runObjectId = objectIdMapper.stringToObjectId(runId);
         final RunView runView = runService.getRunById(runObjectId);
         final User user = (User) authentication.getPrincipal();
@@ -74,7 +77,7 @@ public class RunController {
     }
 
     @GetMapping ("{runId}")
-    public RunView get (@PathVariable String runId, final Authentication authentication) {
+    public RunView get (@PathVariable @NotBlank String runId, final Authentication authentication) {
         final ObjectId runObjectId = objectIdMapper.stringToObjectId(runId);
         final RunView runView = runService.getRunById(runObjectId);
         final User user = (User) authentication.getPrincipal();

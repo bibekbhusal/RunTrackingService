@@ -39,13 +39,13 @@ public interface RunRepository extends CustomRunRepo, MongoRepository<Run, Objec
 
     List<Run> findByOwnerId (ObjectId ownerId);
 
-    List<Run> findByOwnerIdAndLocationNear (String ownerId, GeoJsonPoint point, Distance distance);
+    List<Run> findByOwnerIdAndLocationNear (ObjectId ownerId, GeoJsonPoint point, Distance distance);
 
-    List<Run> findByOwnerIdAndStartDateBetween (String ownerId, LocalDateTime start, LocalDateTime end);
+    List<Run> findByOwnerIdAndStartDateBetween (ObjectId ownerId, LocalDateTime start, LocalDateTime end);
 
-    List<Run> findByOwnerIdAndDistanceBetween (String ownerId, Double min, Double max);
+    List<Run> findByOwnerIdAndDistanceBetween (ObjectId ownerId, Double min, Double max);
 
-    List<Run> findByOwnerIdAndDurationBetween (String ownerId, Integer min, Integer max);
+    List<Run> findByOwnerIdAndDurationBetween (ObjectId ownerId, Integer min, Integer max);
 
     default Run getById (@NonNull final ObjectId objectId) {
         return findById(objectId)

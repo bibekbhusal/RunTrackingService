@@ -6,12 +6,21 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class Coordinates {
-    Double latitude;
-    Double longitude;
+
+    @Max (value = 90)
+    @Min (value = -90)
+    private Double latitude;
+
+    @Max (value = 180)
+    @Min (value = -180)
+    private Double longitude;
 
     public static Coordinates fromGeoJSONPoint (@NonNull final GeoJsonPoint point) {
         // GeoJSON point uses longitude, latitude convention.
