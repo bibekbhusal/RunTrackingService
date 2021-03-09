@@ -5,6 +5,7 @@ import com.bhusalb.runtrackingservice.mappers.ObjectIdMapper;
 import com.bhusalb.runtrackingservice.models.Roles;
 import com.bhusalb.runtrackingservice.models.User;
 import com.bhusalb.runtrackingservice.services.RunService;
+import com.bhusalb.runtrackingservice.views.AdvanceSearchQuery;
 import com.bhusalb.runtrackingservice.views.CreateRunRequest;
 import com.bhusalb.runtrackingservice.views.ListResponse;
 import com.bhusalb.runtrackingservice.views.RunView;
@@ -109,6 +110,21 @@ public class RunController {
                 throw new HttpClientErrorException(HttpStatus.FORBIDDEN, message);
             }
         }
-        return new ListResponse<>(runService.searchRuns(request.getPage(), request.getQuery()));
+        return new ListResponse<>(runService.search(request.getPage(), request.getQuery()));
+    }
+
+    @PostMapping ("advanceSearch")
+    public ListResponse<RunView> advanceSearch (@RequestBody @NotNull @Valid SearchRequest<AdvanceSearchQuery> request,
+                                                final Authentication authentication) {
+        final User user = (User) authentication.getPrincipal();
+        // If logged in user is not an Admin, then restrict the query for the logged in user.
+        if (!user.getRoles().contains(Roles.ADMIN)) {
+            final String updatedQueryString = String.format("(%s) AND (ownerId eq %s)",
+                request.getQuery().getQueryString(), user.getId());
+            log.info("Logged in user is not an Admin so appending userId to restrict the search to the user's records" +
+                ". Final query string: {}", updatedQueryString);
+            request.getQuery().setQueryString(updatedQueryString);
+        }
+        return new ListResponse<>(runService.advanceSearch(request.getPage(), request.getQuery()));
     }
 }

@@ -5,6 +5,7 @@ import com.bhusalb.runtrackingservice.mappers.UserViewMapper;
 import com.bhusalb.runtrackingservice.models.Roles;
 import com.bhusalb.runtrackingservice.models.User;
 import com.bhusalb.runtrackingservice.repos.UserRepository;
+import com.bhusalb.runtrackingservice.views.AdvanceSearchQuery;
 import com.bhusalb.runtrackingservice.views.CreateUserRequest;
 import com.bhusalb.runtrackingservice.views.Page;
 import com.bhusalb.runtrackingservice.views.SearchUserQuery;
@@ -91,5 +92,9 @@ public class UserService implements UserDetailsService {
     public List<UserView> searchUsers (final Page page, final SearchUserQuery query) {
         final List<User> users = userRepository.searchUsers(page, query);
         return userViewMapper.toUserViews(users);
+    }
+
+    public List<UserView> advanceSearch(final Page page, final AdvanceSearchQuery query) {
+        return userViewMapper.toUserViews(userRepository.advanceSearch(page, query));
     }
 }

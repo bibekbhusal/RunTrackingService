@@ -6,6 +6,7 @@ import com.bhusalb.runtrackingservice.mappers.RunViewMapper;
 import com.bhusalb.runtrackingservice.models.Run;
 import com.bhusalb.runtrackingservice.models.Weather;
 import com.bhusalb.runtrackingservice.repos.RunRepository;
+import com.bhusalb.runtrackingservice.views.AdvanceSearchQuery;
 import com.bhusalb.runtrackingservice.views.Coordinates;
 import com.bhusalb.runtrackingservice.views.CreateRunRequest;
 import com.bhusalb.runtrackingservice.views.Page;
@@ -103,9 +104,13 @@ public class RunService {
         return runViewMapper.toRunViews(runs);
     }
 
-    public List<RunView> searchRuns (final Page page, final SearchRunQuery query) {
+    public List<RunView> search (final Page page, final SearchRunQuery query) {
         final List<Run> runs = runRepository.searchRuns(page, query);
         return runViewMapper.toRunViews(runs);
+    }
+
+    public List<RunView> advanceSearch(final Page page, final AdvanceSearchQuery query) {
+        return runViewMapper.toRunViews(runRepository.advanceSearch(page, query));
     }
 
     private Weather createWeatherFromResponse (final WeatherService.WeatherQueryResponse response) {

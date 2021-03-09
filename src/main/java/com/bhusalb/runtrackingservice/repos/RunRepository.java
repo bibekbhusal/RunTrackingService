@@ -2,8 +2,10 @@ package com.bhusalb.runtrackingservice.repos;
 
 import com.bhusalb.runtrackingservice.Constants;
 import com.bhusalb.runtrackingservice.exceptions.ResourceNotFoundException;
+import com.bhusalb.runtrackingservice.libs.query.parser.QueryParser;
 import com.bhusalb.runtrackingservice.mappers.ObjectIdMapper;
 import com.bhusalb.runtrackingservice.models.Run;
+import com.bhusalb.runtrackingservice.views.AdvanceSearchQuery;
 import com.bhusalb.runtrackingservice.views.Coordinates;
 import com.bhusalb.runtrackingservice.views.Page;
 import com.bhusalb.runtrackingservice.views.SearchRunQuery;
@@ -63,6 +65,7 @@ public interface RunRepository extends CustomRunRepo, MongoRepository<Run, Objec
 
 interface CustomRunRepo {
     List<Run> searchRuns (final Page page, final SearchRunQuery query);
+    List<Run> advanceSearch(final Page page, final AdvanceSearchQuery query);
 }
 
 @RequiredArgsConstructor
@@ -73,6 +76,9 @@ class CustomRunRepoImpl implements CustomRunRepo {
 
     @Autowired
     private ObjectIdMapper objectIdMapper;
+
+    @Autowired
+    private QueryParser queryParser;
 
     @Override
     public List<Run> searchRuns (final Page page, final SearchRunQuery query) {
@@ -128,6 +134,24 @@ class CustomRunRepoImpl implements CustomRunRepo {
             log.warn("Criteria is empty. Skipping query and returning empty result.");
             return Collections.emptyList();
         }
+
+        operations.add(sort(Sort.Direction.DESC, "startDate"));
+        operations.add(skip((page.getNumber() - 1) * page.getLimit()));
+        operations.add(limit(page.getLimit()));
+
+        final TypedAggregation<Run> aggregation = newAggregation(Run.class, operations);
+        final AggregationResults<Run> results = mongoTemplate.aggregate(aggregation, Run.class);
+
+        return results.getMappedResults();
+    }
+
+    @Override
+    public List<Run> advanceSearch (final Page page, final AdvanceSearchQuery query) {
+        final Criteria criteria = queryParser.parse(query.getQueryString()).toMongo();
+        log.info("Parsed mongo criteria {} from query {}", criteria.toString(), query.getQueryString());
+
+        final List<AggregationOperation> operations = new ArrayList<>();
+        operations.add(match(criteria));
 
         operations.add(sort(Sort.Direction.DESC, "startDate"));
         operations.add(skip((page.getNumber() - 1) * page.getLimit()));

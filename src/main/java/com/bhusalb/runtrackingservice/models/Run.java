@@ -37,16 +37,19 @@ public class Run implements Serializable {
     private ObjectId ownerId;
 
     @NotNull
+    @Indexed
     private LocalDateTime startDate;
 
     @NotNull
+    @Indexed
     private Integer duration;
 
     @NotNull
-    @GeoSpatialIndexed(type = GEO_2DSPHERE)
+    @GeoSpatialIndexed (type = GEO_2DSPHERE)
     private GeoJsonPoint location;
 
     @NotNull
+    @Indexed
     private Double distance;
 
     private Weather weather;

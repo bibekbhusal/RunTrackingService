@@ -4,6 +4,7 @@ import com.bhusalb.runtrackingservice.mappers.ObjectIdMapper;
 import com.bhusalb.runtrackingservice.models.Roles;
 import com.bhusalb.runtrackingservice.models.User;
 import com.bhusalb.runtrackingservice.services.UserService;
+import com.bhusalb.runtrackingservice.views.AdvanceSearchQuery;
 import com.bhusalb.runtrackingservice.views.ListResponse;
 import com.bhusalb.runtrackingservice.views.SearchRequest;
 import com.bhusalb.runtrackingservice.views.SearchUserQuery;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 
 @Tag (name = "User")
 @RestController
@@ -98,6 +100,12 @@ public class UserAdminController {
     @PostMapping ("search")
     public ListResponse<UserView> search (@RequestBody @Valid SearchRequest<SearchUserQuery> request) {
         return new ListResponse<>(userService.searchUsers(request.getPage(), request.getQuery()));
+    }
+
+    @PreAuthorize ("hasRole('USER_MANAGER') || hasRole('ADMIN')")
+    @PostMapping ("advanceSearch")
+    public ListResponse<UserView> advanceSearch(@RequestBody @NotNull @Valid SearchRequest<AdvanceSearchQuery> request) {
+        return new ListResponse<>(userService.advanceSearch(request.getPage(), request.getQuery()));
     }
 
     private static boolean hasWritePermission (final User currentUser, final User updatingUser) {

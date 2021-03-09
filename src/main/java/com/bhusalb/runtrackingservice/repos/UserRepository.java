@@ -1,8 +1,10 @@
 package com.bhusalb.runtrackingservice.repos;
 
 import com.bhusalb.runtrackingservice.exceptions.ResourceNotFoundException;
+import com.bhusalb.runtrackingservice.libs.query.parser.QueryParser;
 import com.bhusalb.runtrackingservice.mappers.ObjectIdMapper;
 import com.bhusalb.runtrackingservice.models.User;
+import com.bhusalb.runtrackingservice.views.AdvanceSearchQuery;
 import com.bhusalb.runtrackingservice.views.Page;
 import com.bhusalb.runtrackingservice.views.SearchUserQuery;
 import lombok.NonNull;
@@ -51,6 +53,7 @@ public interface UserRepository extends UserRepoCustom, MongoRepository<User, Ob
 
 interface UserRepoCustom {
     List<User> searchUsers (final Page page, final SearchUserQuery query);
+    List<User> advanceSearch(final Page page, final AdvanceSearchQuery query);
 }
 
 @RequiredArgsConstructor
@@ -61,6 +64,9 @@ class UserRepoCustomImpl implements UserRepoCustom {
 
     @Autowired
     private ObjectIdMapper objectIdMapper;
+
+    @Autowired
+    private QueryParser queryParser;
 
     @Override
     public List<User> searchUsers (final Page page, final SearchUserQuery query) {
@@ -94,6 +100,24 @@ class UserRepoCustomImpl implements UserRepoCustom {
             log.warn("Criteria is empty. Skipping query and returning empty result.");
             return Collections.emptyList();
         }
+
+        operations.add(sort(Sort.Direction.DESC, "created"));
+        operations.add(skip((page.getNumber() - 1) * page.getLimit()));
+        operations.add(limit(page.getLimit()));
+
+        final TypedAggregation<User> aggregation = newAggregation(User.class, operations);
+        final AggregationResults<User> results = mongoTemplate.aggregate(aggregation, User.class);
+
+        return results.getMappedResults();
+    }
+
+    @Override
+    public List<User> advanceSearch (final Page page, final AdvanceSearchQuery query) {
+        final Criteria criteria = queryParser.parse(query.getQueryString()).toMongo();
+        log.info("Parsed mongo criteria {} from query {}", criteria.toString(), query.getQueryString());
+
+        final List<AggregationOperation> operations = new ArrayList<>();
+        operations.add(match(criteria));
 
         operations.add(sort(Sort.Direction.DESC, "created"));
         operations.add(skip((page.getNumber() - 1) * page.getLimit()));
