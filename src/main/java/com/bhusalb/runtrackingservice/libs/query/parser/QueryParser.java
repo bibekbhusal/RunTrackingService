@@ -50,6 +50,9 @@ public class QueryParser {
             .and("fullName", STRING_FUNCTION)
             .and("created", DATE_TIME_FUNCTION)
             .and("createdBy", OBJECT_ID_FUNCTION)
+            .and("weather.temperature", DOUBLE_FUNCTION)
+            .and("weather.precipitation", DOUBLE_FUNCTION)
+            .and("weather.humidity", DOUBLE_FUNCTION)
             .build();
 
     public Criteria parse (@NonNull final String query) {
