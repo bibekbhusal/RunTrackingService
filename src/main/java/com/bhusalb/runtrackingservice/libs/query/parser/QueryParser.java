@@ -52,13 +52,6 @@ public class QueryParser {
             .and("createdBy", OBJECT_ID_FUNCTION)
             .build();
 
-    public static void main (String[] args) {
-        final String query = "(date gt 2020-05-01) AND (((distance gt 4100) OR (distance lt 2500)) AND (duration gt " +
-            "1000))";
-        final QueryParser queryParser = new QueryParser();
-        System.out.println(queryParser.parse(query));
-    }
-
     public Criteria parse (@NonNull final String query) {
         log.info("Parsing query: {}.", query);
 
@@ -89,6 +82,9 @@ public class QueryParser {
     }
 
     private static UnaryCriteria parseCommand (final String command) {
+        // This is bit fragile. May be search for command and break string into two pieces: one before the command
+        // and another after the command. For example, "distance eq 5", here 'eq' is command. So, then three pieces
+        // will be "distance", "eq", and "5".
         final String[] tokens = command.split("\\s");
 
         if (tokens.length != 3) throw new IllegalArgumentException("Illegal query format: " + command);

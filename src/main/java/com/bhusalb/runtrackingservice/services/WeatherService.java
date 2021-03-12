@@ -4,6 +4,7 @@ import com.bhusalb.runtrackingservice.views.Coordinates;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
 import io.jsonwebtoken.lang.Maps;
 import lombok.Data;
 import lombok.NonNull;
@@ -27,9 +28,11 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class WeatherService {
 
-    private static final String API_KEY = "1PYNQ6AWUDJE9AFERDCHJHSXK";
+    @org.springframework.beans.factory.annotation.Value("${weather.api-key}")
+    private String apiKey;
 
-    private static final String BASE_URI =
+    @VisibleForTesting
+    static final String BASE_URI =
         "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/weatherdata/";
 
     private final WebClient webClient;
@@ -52,7 +55,7 @@ public class WeatherService {
                 .and("contentType", "json")
                 .and("unitGroup", "us")
                 .and("locationMode", "single")
-                .and("key", API_KEY)
+                .and("key", apiKey)
                 .and("locations", formatCoordinates(coordinates))
                 .and("startDateTime", date.format(DateTimeFormatter.ISO_DATE))
                 .and("endDateTime", date.format(DateTimeFormatter.ISO_DATE))
@@ -79,7 +82,7 @@ public class WeatherService {
             .and("contentType", "json")
             .and("unitGroup", "us")
             .and("locationMode", "single")
-            .and("key", API_KEY)
+            .and("key", apiKey)
             .and("locations", formatCoordinates(coordinates))
             .and("forecastDays", "1")
             .build();

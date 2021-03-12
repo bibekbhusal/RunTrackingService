@@ -11,6 +11,7 @@ import com.bhusalb.runtrackingservice.views.Page;
 import com.bhusalb.runtrackingservice.views.SearchUserQuery;
 import com.bhusalb.runtrackingservice.views.UpdateUserRequest;
 import com.bhusalb.runtrackingservice.views.UserView;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -96,5 +97,10 @@ public class UserService implements UserDetailsService {
 
     public List<UserView> advanceSearch(final Page page, final AdvanceSearchQuery query) {
         return userViewMapper.toUserViews(userRepository.advanceSearch(page, query));
+    }
+
+    @VisibleForTesting
+    public UserView getByEmail(final String email) {
+        return userViewMapper.toUserView(userRepository.findByEmail(email).orElse(null));
     }
 }
