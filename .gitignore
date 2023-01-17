@@ -41,3 +41,5 @@ gradlew
 gradlew.bat
 
 jwt-secret
+
+**.DS_Store
